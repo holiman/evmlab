@@ -63,6 +63,7 @@ def toText(op):
                 e = "OOG"
             fmt = fmt + " err: OOG"
         return fmt.format(**op)
+
     return "N/A"
 
 def getIntrinsicGas(data):
@@ -197,6 +198,16 @@ class CppVM(VM):
             logger.info(e)
 
         return canon_steps
+
+class JsVM(VM):
+    @staticmethod
+    def canonicalized(output):
+        steps = []
+        for index, line in enumerate(output):
+            if line and line[0] == '{':
+                result = json.loads(line)
+                steps.append(result)
+        return steps
 
 class PyVM(VM):
 

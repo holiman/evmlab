@@ -46,6 +46,7 @@ def parse_config():
     cfg['CPP_DOCKER_NAME'] = config[uname]['cpp_docker_name']
     cfg['PARITY_DOCKER_NAME'] = config[uname]['parity_docker_name']
     cfg['GETH_DOCKER_NAME'] = config[uname]['geth_docker_name']
+    cfg['JS_DOCKER_NAME'] = config[uname]['js_docker_name']
     cfg['PRESTATE_TMP_FILE']=config[uname]['prestate_tmp_file']
     cfg['SINGLE_TEST_TMP_FILE']=config[uname]['single_test_tmp_file']
     cfg['LOGS_PATH'] = config[uname]['logs_path']
@@ -354,7 +355,18 @@ def startGeth(test_file):
 
     return VMUtils.startProc(geth_docker_cmd)
 
+def startJs(single_test_tmp_file):
+    logger.info("running state test in EthereumJS.")
 
+    testfile_path = os.path.abspath(single_test_tmp_file)
+    mount_testfile = testfile_path + ":" + "/ethereum/"+single_test_tmp_file
+    js_docker_cmd = ["docker", "run", "--rm", "-t", "-v", mount_testfile, cfg["JS_DOCKER_NAME"], "-s", "--customStateTest", single_test_tmp_file]
+    js_docker_cmd.extend(['--jsontrace'])
+    js_docker_cmd.extend(['--fork', cfg['FORK_CONFIG']])
+
+
+    logger.info("js_cmd: %s " % " ".join(js_docker_cmd))
+    return VMUtils.startProc(js_docker_cmd)
 
 def startPython(test_file, test_tx):
     logger.info("running state test in pyeth.")
@@ -398,6 +410,8 @@ def finishGeth(process):
 def finishPython(process):
     return finishProc("python", process, VMUtils.PyVM.canonicalized)
 
+def finishJs(process):
+    return finishProc("javascript", process, VMUtils.JsVM.canonicalized)
 
 def startClient(client, single_test_tmp_file, prestate_tmp_file, tx, test_subfolder, test_name, tx_dgv, test_case):
     """ Starts the client process, returns a tuple
@@ -413,6 +427,9 @@ def startClient(client, single_test_tmp_file, prestate_tmp_file, tx, test_subfol
         return (startPython(prestate_tmp_file, tx), finishPython)
     if client == 'PAR':
         return (startParity(single_test_tmp_file), finishParity)
+    if client == 'JS':
+        import pdb; pdb.set_trace()
+        return (startJs(single_test_tmp_file), finishJs)
 
     logger.error("ERROR! client not supported:", client)
     return []
@@ -611,6 +628,8 @@ def perform_test(f, test_name, test_number = 0):
                 procs.append( (startPython(prestate_tmpfile, tx), finishPython) )
             if client_name == 'PAR':
                 procs.append( (startParity(test_tmpfile), finishParity) )
+            elif client_name == 'JS':
+                procs.append( (startJs(test_tmpfile), finishJs) )
 
 #            procs.append(startClient(client_name ,test_tmpfile, prestate_tmpfile, tx, test_subfolder, test_name, tx_dgv, test_case))
 
