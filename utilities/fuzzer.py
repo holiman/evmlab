@@ -423,8 +423,8 @@ def end_processes(test):
         canonicalizer = canonicalizers[client_name]
         canon_steps = []
         with open(test.tempTraceLocation(client_name)) as output:
-            canon_step_generator = canonicalizer(output)
-            canon_trace = [VMUtils.toText(step) for step in canon_step_generator]
+            canon_steps = list(canonicalizer(output))
+            canon_trace = [VMUtils.toText(step) for step in canon_steps]
         test.canon_traces.append(canon_trace)
         tracelen = len(canon_trace)
         t2 = time.time()
